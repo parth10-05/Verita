@@ -114,8 +114,10 @@ export const adminAPI = {
   getDashboardStats: () => api.get('/admin/dashboard'),
   getAllUsers: (params = {}) => api.get('/admin/users', { params }),
   getAllQuestions: (params = {}) => api.get('/admin/questions', { params }),
+  getUserDetails: (userId) => api.get(`/admin/users/${userId}`),
   deleteUser: (userId) => api.delete(`/admin/users/${userId}`),
   deleteQuestion: (questionId) => api.delete(`/admin/questions/${questionId}`),
+  toggleUserBan: (userId, isBanned) => api.patch(`/admin/users/${userId}/ban`, { isBanned }),
 };
 
 // Utility functions

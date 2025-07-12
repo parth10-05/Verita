@@ -28,6 +28,15 @@ const Header = () => {
     navigate('/');
   };
 
+  // Function to get user initials
+  const getUserInitials = (user) => {
+    if (!user) return '';
+    const name = user.name || user.username || '';
+    const parts = name.trim().split(' ');
+    if (parts.length === 1) return parts[0][0]?.toUpperCase() || '';
+    return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+  };
+
   return (
     <header className="header">
       <div className="header-container">
@@ -38,14 +47,33 @@ const Header = () => {
 
         {/* Search Bar */}
         <form onSubmit={handleSearch} className="header-search">
-          <div className="search-container">
-            <FaSearch className="search-icon" />
+          <div className="search-container" style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+            <FaSearch className="search-icon" style={{ position: 'absolute', left: 12, color: 'var(--text-secondary)', zIndex: 1 }} />
             <input
               type="text"
               placeholder="Search questions..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="search-input"
+              style={{
+                width: '100%',
+                padding: '10px 12px 10px 40px',
+                border: '2px solid var(--border-color)',
+                borderRadius: '8px',
+                fontSize: '14px',
+                backgroundColor: 'var(--bg-primary)',
+                color: 'var(--text-primary)',
+                transition: 'all 0.3s ease',
+                outline: 'none'
+              }}
+              onFocus={(e) => {
+                e.target.style.borderColor = 'var(--primary-color)';
+                e.target.style.boxShadow = '0 0 0 3px rgba(102, 126, 234, 0.1)';
+              }}
+              onBlur={(e) => {
+                e.target.style.borderColor = 'var(--border-color)';
+                e.target.style.boxShadow = 'none';
+              }}
             />
           </div>
         </form>
@@ -72,7 +100,7 @@ const Header = () => {
           {user ? (
             <>
               {/* Notification Bell */}
-              <div className="notification-container">
+              <div className="notification-container" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                 <button
                   className="notification-btn"
                   onClick={() => setShowNotifications(!showNotifications)}
@@ -91,11 +119,26 @@ const Header = () => {
               {/* User Menu */}
               <div className="user-menu">
                 <div className="user-avatar">
-                  <img
-                    src={user.avatar || `https://ui-avatars.com/api/?name=${user.name}&background=667eea&color=fff`}
-                    alt={user.name}
-                    className="avatar-img"
-                  />
+                  {user.avatar ? (
+                    <img
+                      src={user.avatar}
+                      alt={user.name}
+                      className="avatar-img"
+                    />
+                  ) : (
+                    <span style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      width: 40,
+                      height: 40,
+                      borderRadius: '50%',
+                      background: '#667eea',
+                      color: '#fff',
+                      fontWeight: 700,
+                      fontSize: 18
+                    }}>{getUserInitials(user)}</span>
+                  )}
                 </div>
                 <div className="user-dropdown">
                   <div className="user-info">

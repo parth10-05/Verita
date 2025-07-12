@@ -13,18 +13,20 @@ const Home = () => {
   const [error, setError] = useState(null);
   const [filter, setFilter] = useState('all');
   const [sortBy, setSortBy] = useState('latest');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
   const [searchParams] = useSearchParams();
   const { user } = useAuth();
 
   // Load questions from API
-  const loadQuestions = async () => {
+  const loadQuestions = async (page = 1) => {
     setLoading(true);
     setError(null);
     try {
       const params = {
         filter,
         sort: sortBy,
-        page: 1,
+        page,
         limit: 20
       };
       const search = searchParams.get('search');
@@ -33,6 +35,8 @@ const Home = () => {
       }
       const response = await questionsAPI.getQuestions(params);
       setQuestions(response.data.questions);
+      setTotalPages(response.data.totalPages || 1);
+      setCurrentPage(response.data.currentPage || page);
     } catch (error) {
       setError(apiUtils.handleError(error));
     } finally {
@@ -41,12 +45,16 @@ const Home = () => {
   };
 
   useEffect(() => {
-    loadQuestions();
+    loadQuestions(1);
     // eslint-disable-next-line
   }, [filter, sortBy, searchParams]);
 
   const handleFilterChange = (newFilter) => setFilter(newFilter);
   const handleSortChange = (newSort) => setSortBy(newSort);
+  const handlePageChange = (page) => {
+    if (page < 1 || page > totalPages || page === currentPage) return;
+    loadQuestions(page);
+  };
 
   const getSortIcon = (sortType) => {
     switch (sortType) {
@@ -138,16 +146,7 @@ const Home = () => {
       <motion.div className="questions-section">
         <AnimatePresence mode="wait">
           {questions.length === 0 ? (
-            <motion.div className="empty-state">
-              <motion.div className="empty-icon" animate={{ rotate: [0, -10, 10, 0], scale: [1, 1.1, 1] }} transition={{ duration: 2, repeat: Infinity, repeatDelay: 3 }}>🤔</motion.div>
-              <h3>No questions found</h3>
-              <p>Try adjusting your filters or search terms</p>
-              {user && (
-                <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-                  <Link to="/ask" className="btn btn-primary">Ask the First Question</Link>
-                </motion.div>
-              )}
-            </motion.div>
+            null
           ) : (
             <div className="questions-grid">
               {questions.map((question, index) => (

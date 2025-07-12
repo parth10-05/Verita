@@ -37,26 +37,6 @@ const Footer = () => {
               <li><Link to="/register">Register</Link></li>
             </ul>
           </div>
-
-          <div className="footer-section">
-            <h4 className="footer-heading">Support</h4>
-            <ul className="footer-links">
-              <li><a href="#help">Help Center</a></li>
-              <li><a href="#guidelines">Community Guidelines</a></li>
-              <li><a href="#privacy">Privacy Policy</a></li>
-              <li><a href="#terms">Terms of Service</a></li>
-            </ul>
-          </div>
-
-          <div className="footer-section">
-            <h4 className="footer-heading">About</h4>
-            <ul className="footer-links">
-              <li><a href="#about">About Verita</a></li>
-              <li><a href="#team">Our Team</a></li>
-              <li><a href="#contact">Contact Us</a></li>
-              <li><a href="#careers">Careers</a></li>
-            </ul>
-          </div>
         </div>
 
         <div className="footer-bottom">

@@ -68,6 +68,7 @@ const VoteButtons = ({
   };
 
   const formatVoteCount = (count) => {
+    if (typeof count !== 'number' || isNaN(count)) return '0';
     if (count >= 1000) {
       return (count / 1000).toFixed(1) + 'k';
     }
@@ -78,7 +79,7 @@ const VoteButtons = ({
     <motion.div className={`vote-buttons ${size}`} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }}>
       <motion.button
         className={`vote-btn upvote ${userVote === 'up' ? 'voted' : ''}`}
-        onClick={() => handleVote('up')}
+        onClick={() => handleVote('upvote')}
         title="Upvote"
         disabled={!user || loading}
         whileHover={{ scale: 1.1 }}
@@ -90,7 +91,7 @@ const VoteButtons = ({
       <motion.div className="vote-count" key={voteCount}>{formatVoteCount(voteCount)}</motion.div>
       <motion.button
         className={`vote-btn downvote ${userVote === 'down' ? 'voted' : ''}`}
-        onClick={() => handleVote('down')}
+        onClick={() => handleVote('downvote')}
         title="Downvote"
         disabled={!user || loading}
         whileHover={{ scale: 1.1 }}

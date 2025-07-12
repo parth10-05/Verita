@@ -11,8 +11,10 @@ import QuestionDetail from './pages/QuestionDetail/QuestionDetail';
 import Login from './pages/Login/Login';
 import Register from './pages/Register/Register';
 import Profile from './pages/Profile/Profile';
+import Admin from './pages/Admin/Admin';
 import NotificationsPage from './pages/Notifications';
 import './styles/layout.css';
+import './styles/admin.css';
 
 function App() {
   return (
@@ -30,6 +32,7 @@ function App() {
                   <Route path="/login" element={<Login />} />
                   <Route path="/register" element={<Register />} />
                   <Route path="/profile" element={<Profile />} />
+                  <Route path="/admin" element={<Admin />} />
                   <Route path="/notifications" element={<NotificationsPage />} />
                 </Routes>
               </main>

@@ -71,7 +71,7 @@ export const getDashboardStats = async (req, res) => {
 // Get all users (admin only)
 export const getAllUsers = async (req, res) => {
     try {
-        const { page = 1, limit = 20, search } = req.query;
+        const { page = 1, limit = 2, search } = req.query;
         const skip = (page - 1) * limit;
 
         let query = {};
@@ -199,4 +199,85 @@ export const deleteQuestion = async (req, res) => {
         console.log("Error in deleteQuestion", err);
         res.status(500).json({ message: err.message });
     }
+};
+
+// Ban/Unban user (admin only)
+export const toggleUserBan = async (req, res) => {
+    try {
+        const { userId } = req.params;
+        const { isBanned } = req.body;
+
+        const user = await User.findById(userId);
+        if (!user) {
+            return res.status(404).json({ message: "User not found" });
+        }
+
+        // Prevent admin from banning themselves
+        if (user._id.toString() === req.user._id.toString()) {
+            return res.status(400).json({ message: "Cannot ban your own account" });
+        }
+
+        // Prevent banning other admins
+        if (user.role === 'admin') {
+            return res.status(400).json({ message: "Cannot ban admin users" });
+        }
+
+        // Update user's ban status
+        user.is_banned = isBanned;
+        await user.save();
+
+        res.status(200).json({
+            message: `User ${isBanned ? 'banned' : 'unbanned'} successfully`,
+            user: {
+                _id: user._id,
+                username: user.username,
+                email: user.email,
+                role: user.role,
+                is_banned: user.is_banned
+            },
+            success: true
+        });
+    } catch (err) {
+        console.log("Error in toggleUserBan", err);
+        res.status(500).json({ message: err.message });
+    }
+};
+
+// Get user details (admin only)
+export const getUserDetails = async (req, res) => {
+    try {
+        const { userId } = req.params;
+
+        const user = await User.findById(userId).select('-password_hash');
+        if (!user) {
+            return res.status(404).json({ message: "User not found" });
+        }
+
+        // Get user's questions and answers count
+        const questionCount = await Question.countDocuments({ authorId: userId });
+        const answerCount = await Answer.countDocuments({ user_id: userId });
+
+        res.status(200).json({
+            user: {
+                ...user.toObject(),
+                questionCount,
+                answerCount
+            },
+            success: true
+        });
+    } catch (err) {
+        console.log("Error in getUserDetails", err);
+        res.status(500).json({ message: err.message });
+    }
+};
+
+export default {
+    createAdmin,
+    getDashboardStats,
+    getAllUsers,
+    getAllQuestions,
+    deleteUser,
+    deleteQuestion,
+    toggleUserBan,
+    getUserDetails
 };

@@ -20,6 +20,7 @@ const QuestionCard = ({ question, index = 0 }) => {
     if (text.length <= maxLength) return text;
     return text.substring(0, maxLength) + '...';
   };
+  const stripPTags = (html) => html.replace(/<\/?p>/gi, '');
   // Animation variants
   const cardVariants = {
     hidden: { opacity: 0, y: 50, scale: 0.9 },
@@ -54,10 +55,15 @@ const QuestionCard = ({ question, index = 0 }) => {
         <div className="question-meta">
           <div className="meta-item"><FaClock /><span>{formatTimeAgo(questionData.createdAt)}</span></div>
           <div className="meta-item"><FaUser /><span>{questionData.author.name}</span></div>
+          {questionData.isAccepted && (
+            <div className="meta-item" style={{ color: 'var(--success-color)', fontWeight: 600 }}>
+              <FaCheck /> <span>Accepted</span>
+            </div>
+          )}
         </div>
       </div>
       <div className="question-body">
-        <p className="question-description">{truncateText(questionData.description)}</p>
+        <p className="question-description">{truncateText(stripPTags(questionData.description))}</p>
         <div className="question-tags">
           {questionData.tags.map((tag, tagIndex) => (
             <Link key={tagIndex} to={`/?search=${encodeURIComponent(tag)}`} className="tag">{tag}</Link>
@@ -67,14 +73,7 @@ const QuestionCard = ({ question, index = 0 }) => {
       <div className="question-footer">
         <div className="question-stats">
           <div className="stat-item">
-            <VoteButtons votes={questionData.votes} questionId={questionData.id} size="small" />
-          </div>
-          <div className="stat-item"><FaComment />
-            {questionData.answers === 0 ? (
-              <span>No answers yet</span>
-            ) : (
-              <span>{questionData.answers} answers</span>
-            )}
+            <VoteButtons votes={question.upvotes - question.downvotes} questionId={question._id || question.id} size="small" />
           </div>
         </div>
         <div className="question-author">

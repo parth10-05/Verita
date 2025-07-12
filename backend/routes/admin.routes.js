@@ -6,7 +6,9 @@ import {
     getAllUsers,
     getAllQuestions,
     deleteUser,
-    deleteQuestion
+    deleteQuestion,
+    toggleUserBan,
+    getUserDetails
 } from '../controller/admin.controller.js';
 
 const router = express.Router();
@@ -23,7 +25,9 @@ router.get('/dashboard', getDashboardStats);
 
 // User management
 router.get('/users', getAllUsers);
+router.get('/users/:userId', getUserDetails);
 router.delete('/users/:userId', deleteUser);
+router.patch('/users/:userId/ban', toggleUserBan);
 
 // Question management
 router.get('/questions', getAllQuestions);
