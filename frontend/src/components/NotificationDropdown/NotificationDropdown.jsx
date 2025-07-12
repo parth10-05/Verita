@@ -13,11 +13,45 @@ const NotificationDropdown = () => {
     clearAllNotifications
   } = useContext(NotificationContext);
 
+  const getNotificationContent = (notification) => {
+    // If title and message are provided by backend, use them
+    if (notification.title && notification.message) {
+      return {
+        title: notification.title,
+        message: notification.message
+      };
+    }
+
+    // Fallback content based on notification type
+    switch (notification.type) {
+      case 'new_answer':
+        return {
+          title: 'New Answer',
+          message: `${notification.senderId?.username || 'Someone'} answered your question`
+        };
+      case 'new_comment':
+        return {
+          title: 'New Comment',
+          message: `${notification.senderId?.username || 'Someone'} commented on your ${notification.referenceType || 'content'}`
+        };
+      case 'mention':
+        return {
+          title: 'Mention',
+          message: `${notification.senderId?.username || 'Someone'} mentioned you in a ${notification.referenceType || 'post'}`
+        };
+      default:
+        return {
+          title: 'Notification',
+          message: 'You have a new notification'
+        };
+    }
+  };
+
   const getNotificationIcon = (type) => {
     switch (type) {
-      case 'answer':
+      case 'new_answer':
         return <FaReply className="notification-type-icon answer" />;
-      case 'comment':
+      case 'new_comment':
         return <FaComment className="notification-type-icon comment" />;
       case 'mention':
         return <FaAt className="notification-type-icon mention" />;
@@ -95,10 +129,10 @@ const NotificationDropdown = () => {
             
             <div className="notification-content">
               <div className="notification-title">
-                {notification.title}
+                {getNotificationContent(notification).title}
               </div>
               <div className="notification-message">
-                {notification.message}
+                {getNotificationContent(notification).message}
               </div>
               <div className="notification-time">
                 {formatTimeAgo(notification.createdAt)}

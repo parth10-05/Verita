@@ -9,6 +9,9 @@ import questionRoutes from './routes/question.routes.js';
 import answerRoutes from './routes/answer.routes.js';
 import voteRoutes from './routes/vote.routes.js';
 import notificationRoutes from './routes/notification.routes.js';
+import userRoutes from './routes/user.routes.js';
+import tagRoutes from './routes/tag.routes.js';
+import commentRoutes from './routes/comment.routes.js';
 import { initializeEmailTransporter } from './utils/email.js';
 
 dotenv.config();
@@ -25,12 +28,17 @@ app.use(cookieParser()); // Parse cookies
 
 initializeEmailTransporter();
 
-app.use('/auth', authRoutes);
-app.use('/admin', adminRoutes);
-app.use('/questions', questionRoutes);
-app.use('/answers', answerRoutes);
-app.use('/votes', voteRoutes);
-app.use('/notifications', notificationRoutes);
+// API routes with /api prefix
+app.use('/api/auth', authRoutes);
+app.use('/api/admin', adminRoutes);
+app.use('/api/questions', questionRoutes);
+app.use('/api/answers', answerRoutes);
+app.use('/api/votes', voteRoutes);
+app.use('/api/notifications', notificationRoutes);
+app.use('/api/users', userRoutes);
+app.use('/api/tags', tagRoutes);
+app.use('/api/comments', commentRoutes);
+
 app.get('/', (req, res) => {
   res.json({ 
     message: 'Welcome to StackIt API',

@@ -45,6 +45,38 @@ export const getUserNotifications = async (req, res) => {
             .skip(skip)
             .limit(parseInt(limit));
 
+        // Generate content for each notification
+        const notificationsWithContent = await Promise.all(
+            notifications.map(async (notification) => {
+                let title = '';
+                let message = '';
+
+                switch (notification.type) {
+                    case 'new_answer':
+                        title = 'New Answer';
+                        message = `${notification.senderId?.username || 'Someone'} answered your question`;
+                        break;
+                    case 'new_comment':
+                        title = 'New Comment';
+                        message = `${notification.senderId?.username || 'Someone'} commented on your ${notification.referenceType}`;
+                        break;
+                    case 'mention':
+                        title = 'Mention';
+                        message = `${notification.senderId?.username || 'Someone'} mentioned you in a ${notification.referenceType}`;
+                        break;
+                    default:
+                        title = 'Notification';
+                        message = 'You have a new notification';
+                }
+
+                return {
+                    ...notification.toObject(),
+                    title,
+                    message
+                };
+            })
+        );
+
         const total = await Notification.countDocuments(query);
         const unreadCount = await Notification.countDocuments({ 
             recipientId: userId, 
@@ -52,7 +84,7 @@ export const getUserNotifications = async (req, res) => {
         });
 
         res.status(200).json({
-            notifications,
+            notifications: notificationsWithContent,
             total,
             unreadCount,
             currentPage: parseInt(page),

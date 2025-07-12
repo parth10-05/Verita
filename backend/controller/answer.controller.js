@@ -69,17 +69,24 @@ export const getAnswersByQuestion = async (req, res) => {
         const { page = 1, limit = 10 } = req.query;
         const skip = (page - 1) * limit;
 
+        console.log('Getting answers for question:', questionId);
+
         // Check if question exists
         const question = await Question.findById(questionId);
         if (!question) {
+            console.log('Question not found:', questionId);
             return res.status(404).json({ message: "Question not found" });
         }
 
+        console.log('Question found, fetching answers...');
+
         const answers = await Answer.find({ question_id: questionId })
             .populate('user_id', 'username profile_photo accepted_answers_count')
-            .sort({ is_accepted: -1, $expr: { $subtract: ["$upvotes", "$downvotes"] } }, { created_at: -1 }) // Accepted first, then by net votes, then by date
+            .sort({ is_accepted: -1, upvotes: -1, downvotes: 1, created_at: -1 }) // Accepted first, then by net votes, then by date
             .skip(skip)
             .limit(parseInt(limit));
+
+        console.log('Answers fetched:', answers.length);
 
         const total = await Answer.countDocuments({ question_id: questionId });
 
@@ -92,6 +99,7 @@ export const getAnswersByQuestion = async (req, res) => {
         });
     } catch (err) {
         console.log("Error in getAnswersByQuestion", err);
+        console.log("Error stack:", err.stack);
         res.status(500).json({ message: err.message });
     }
 };
@@ -227,6 +235,43 @@ export const acceptAnswer = async (req, res) => {
         });
     } catch (err) {
         console.log("Error in acceptAnswer", err);
+        res.status(500).json({ message: err.message });
+    }
+}; 
+
+// Unaccept answer (only question author can unaccept)
+export const unacceptAnswer = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const userId = req.user._id;
+
+        const answer = await Answer.findById(id);
+        if (!answer) {
+            return res.status(404).json({ message: "Answer not found" });
+        }
+
+        // Get the question to check if user is the author
+        const question = await Question.findById(answer.question_id);
+        if (!question) {
+            return res.status(404).json({ message: "Question not found" });
+        }
+
+        // Check if user is the question author
+        if (question.authorId.toString() !== userId.toString()) {
+            return res.status(403).json({ message: "Only question author can unaccept answers" });
+        }
+
+        // Unaccept this answer
+        answer.is_accepted = false;
+        await answer.save();
+
+        res.status(200).json({
+            message: "Answer unaccepted successfully",
+            answer,
+            success: true
+        });
+    } catch (err) {
+        console.log("Error in unacceptAnswer", err);
         res.status(500).json({ message: err.message });
     }
 }; 

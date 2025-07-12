@@ -99,7 +99,6 @@ const Header = () => {
                 </div>
                 <div className="user-dropdown">
                   <div className="user-info">
-                    <span className="user-name">{user.name}</span>
                     <span className="user-email">{user.email}</span>
                   </div>
                   <div className="user-actions">

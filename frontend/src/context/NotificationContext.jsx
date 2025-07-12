@@ -1,4 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { notificationsAPI, apiUtils } from '../utils/api';
+import { useAuth } from './AuthContext';
 
 const NotificationContext = createContext();
 
@@ -13,104 +15,123 @@ export const useNotifications = () => {
 export const NotificationProvider = ({ children }) => {
   const [notifications, setNotifications] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [loading, setLoading] = useState(false);
+  const { user } = useAuth();
 
-  useEffect(() => {
-    // Load notifications from localStorage on app start
-    const savedNotifications = localStorage.getItem('notifications');
-    if (savedNotifications) {
-      try {
-        const parsed = JSON.parse(savedNotifications);
-        setNotifications(parsed);
-        setUnreadCount(parsed.filter(n => !n.read).length);
-      } catch (error) {
-        console.error('Error parsing notifications:', error);
-      }
+  // Load notifications from API
+  const loadNotifications = async () => {
+    if (!user) return;
+    setLoading(true);
+    try {
+      const response = await notificationsAPI.getNotifications();
+      setNotifications(response.data.notifications);
+      setUnreadCount(response.data.unreadCount);
+    } catch (error) {
+      console.error('Error loading notifications:', error);
+    } finally {
+      setLoading(false);
     }
-  }, []);
+  };
+
+  // Load unread count
+  const loadUnreadCount = async () => {
+    if (!user) return;
+    try {
+      const response = await notificationsAPI.getUnreadCount();
+      setUnreadCount(response.data.unreadCount);
+    } catch (error) {
+      console.error('Error loading unread count:', error);
+    }
+  };
 
   useEffect(() => {
-    // Save notifications to localStorage whenever they change
-    localStorage.setItem('notifications', JSON.stringify(notifications));
-    setUnreadCount(notifications.filter(n => !n.read).length);
-  }, [notifications]);
+    if (user) {
+      loadNotifications();
+      loadUnreadCount();
+    } else {
+      setNotifications([]);
+      setUnreadCount(0);
+    }
+  }, [user]);
 
-  const addNotification = (notification) => {
-    const newNotification = {
-      id: Date.now().toString(),
-      ...notification,
-      read: false,
-      createdAt: new Date().toISOString()
-    };
-    
-    setNotifications(prev => [newNotification, ...prev]);
+  const markAsRead = async (notificationId) => {
+    try {
+      await notificationsAPI.markAsRead(notificationId);
+      setNotifications(prev =>
+        prev.map(notification =>
+          notification._id === notificationId
+            ? { ...notification, read: true }
+            : notification
+        )
+      );
+      setUnreadCount(prev => Math.max(0, prev - 1));
+    } catch (error) {
+      console.error('Error marking notification as read:', error);
+    }
   };
 
-  const markAsRead = (notificationId) => {
-    setNotifications(prev =>
-      prev.map(notification =>
-        notification.id === notificationId
-          ? { ...notification, read: true }
-          : notification
-      )
-    );
+  const markAllAsRead = async () => {
+    try {
+      await notificationsAPI.markAllAsRead();
+      setNotifications(prev =>
+        prev.map(notification => ({ ...notification, read: true }))
+      );
+      setUnreadCount(0);
+    } catch (error) {
+      console.error('Error marking all notifications as read:', error);
+    }
   };
 
-  const markAllAsRead = () => {
-    setNotifications(prev =>
-      prev.map(notification => ({ ...notification, read: true }))
-    );
+  const removeNotification = async (notificationId) => {
+    try {
+      await notificationsAPI.deleteNotification(notificationId);
+      setNotifications(prev =>
+        prev.filter(notification => notification._id !== notificationId)
+      );
+      // Update unread count if the notification was unread
+      const notification = notifications.find(n => n._id === notificationId);
+      if (notification && !notification.read) {
+        setUnreadCount(prev => Math.max(0, prev - 1));
+      }
+    } catch (error) {
+      console.error('Error removing notification:', error);
+    }
   };
 
-  const removeNotification = (notificationId) => {
-    setNotifications(prev =>
-      prev.filter(notification => notification.id !== notificationId)
-    );
-  };
-
-  const clearAllNotifications = () => {
+  const clearAllNotifications = async () => {
     setNotifications([]);
+    setUnreadCount(0);
   };
 
   // Helper functions for common notification types
   const notifyAnswerReceived = (questionTitle, answerAuthor) => {
-    addNotification({
-      type: 'answer',
-      title: 'New Answer',
-      message: `${answerAuthor} answered your question: "${questionTitle}"`,
-      link: `/question/${questionTitle}`,
-      icon: 'answer'
-    });
+    // This would typically be handled by the backend when an answer is created
+    console.log('Answer notification:', { questionTitle, answerAuthor });
   };
 
   const notifyCommentReceived = (answerAuthor, commentAuthor) => {
-    addNotification({
-      type: 'comment',
-      title: 'New Comment',
-      message: `${commentAuthor} commented on your answer`,
-      icon: 'comment'
-    });
+    // This would typically be handled by the backend when a comment is created
+    console.log('Comment notification:', { answerAuthor, commentAuthor });
   };
 
   const notifyMention = (mentionedBy, content) => {
-    addNotification({
-      type: 'mention',
-      title: 'You were mentioned',
-      message: `${mentionedBy} mentioned you: "${content}"`,
-      icon: 'mention'
-    });
+    // This would typically be handled by the backend when a mention is detected
+    console.log('Mention notification:', { mentionedBy, content });
   };
 
   const value = {
     notifications,
     unreadCount,
-    addNotification,
+    loading,
     markAsRead,
     markAllAsRead,
     removeNotification,
     clearAllNotifications,
     notifyAnswerReceived,
     notifyCommentReceived,
-    notifyMention
+    notifyMention,
+    loadNotifications,
+    loadUnreadCount
   };
 
   return (
@@ -120,5 +141,4 @@ export const NotificationProvider = ({ children }) => {
   );
 };
 
-// Export the context object for direct usage
 export { NotificationContext };

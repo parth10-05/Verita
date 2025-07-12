@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { authAPI, apiUtils } from '../utils/api';
 
 const AuthContext = createContext();
 
@@ -16,95 +17,74 @@ export const AuthProvider = ({ children }) => {
 
   useEffect(() => {
     // Check if user is logged in on app start
-    const token = localStorage.getItem('token');
-    const userData = localStorage.getItem('user');
-    
-    if (token && userData) {
-      try {
-        setUser(JSON.parse(userData));
-      } catch (error) {
-        console.error('Error parsing user data:', error);
-        localStorage.removeItem('token');
-        localStorage.removeItem('user');
+    const checkAuth = async () => {
+      const token = localStorage.getItem('token');
+      if (token) {
+        try {
+          const response = await authAPI.getCurrentUser();
+          setUser(response.data.user);
+        } catch (error) {
+          localStorage.removeItem('token');
+          localStorage.removeItem('user');
+        }
       }
-    }
-    setLoading(false);
+      setLoading(false);
+    };
+    checkAuth();
   }, []);
 
   const login = async (email, password) => {
     try {
-      // TODO: Replace with actual API call
-      // const response = await api.post('/auth/login', { email, password });
-      
-      // Mock response for now
-      const mockUser = {
-        id: '1',
-        name: 'John Doe',
-        email: email,
-        avatar: null,
-        role: 'user',
-        createdAt: new Date().toISOString()
-      };
-      
-      const mockToken = 'mock-jwt-token';
-      
-      localStorage.setItem('token', mockToken);
-      localStorage.setItem('user', JSON.stringify(mockUser));
-      setUser(mockUser);
-      
-      return { success: true, user: mockUser };
+      const response = await authAPI.login({ email, password });
+      const { user: userData, token } = response.data;
+      localStorage.setItem('token', token);
+      localStorage.setItem('user', JSON.stringify(userData));
+      setUser(userData);
+      return { success: true, user: userData };
     } catch (error) {
-      console.error('Login error:', error);
-      return { success: false, error: error.message };
+      const errorMessage = apiUtils.handleError(error);
+      return { success: false, error: errorMessage };
     }
   };
 
   const register = async (name, email, password) => {
     try {
-      // TODO: Replace with actual API call
-      // const response = await api.post('/auth/register', { name, email, password });
-      
-      // Mock response for now
-      const mockUser = {
-        id: '2',
-        name: name,
-        email: email,
-        avatar: null,
-        role: 'user',
-        createdAt: new Date().toISOString()
-      };
-      
-      const mockToken = 'mock-jwt-token';
-      
-      localStorage.setItem('token', mockToken);
-      localStorage.setItem('user', JSON.stringify(mockUser));
-      setUser(mockUser);
-      
-      return { success: true, user: mockUser };
+      const response = await authAPI.register({ name, email, password });
+      const { user: userData, token } = response.data;
+      localStorage.setItem('token', token);
+      localStorage.setItem('user', JSON.stringify(userData));
+      setUser(userData);
+      return { success: true, user: userData };
     } catch (error) {
-      console.error('Registration error:', error);
-      return { success: false, error: error.message };
+      const errorMessage = apiUtils.handleError(error);
+      return { success: false, error: errorMessage };
     }
   };
 
-  const logout = () => {
+  const logout = async () => {
+    try {
+      await authAPI.logout();
+    } catch (error) {}
     localStorage.removeItem('token');
     localStorage.removeItem('user');
     setUser(null);
   };
 
-  const updateUser = (updatedUser) => {
-    setUser(updatedUser);
-    localStorage.setItem('user', JSON.stringify(updatedUser));
+  const updateUser = async (userData) => {
+    try {
+      const response = await authAPI.updateProfile(userData);
+      const updatedUser = response.data.user;
+      setUser(updatedUser);
+      localStorage.setItem('user', JSON.stringify(updatedUser));
+      return { success: true, user: updatedUser };
+    } catch (error) {
+      const errorMessage = apiUtils.handleError(error);
+      return { success: false, error: errorMessage };
+    }
   };
 
-  const isAuthenticated = () => {
-    return !!user;
-  };
-
-  const isAdmin = () => {
-    return user?.role === 'admin';
-  };
+  const isAuthenticated = () => !!user;
+  const isAdmin = () => user?.role === 'admin';
 
   const value = {
     user,
@@ -124,5 +104,4 @@ export const AuthProvider = ({ children }) => {
   );
 };
 
-// Export the context object for direct usage
 export { AuthContext };

@@ -6,22 +6,51 @@ import { createMentionNotifications } from './notification.controller.js';
 // Create a new question
 export const createQuestion = async (req, res) => {
     try {
-        const { title, body } = req.body;
+        console.log('Received createQuestion request body:', req.body);
+        const { title, body, tags = [] } = req.body;
         const authorId = req.user._id;
 
         // Validate required fields
         if (!title || !body) {
+            console.log('Validation failed: missing title or body');
             return res.status(400).json({ 
                 message: "Title and body are required" 
             });
         }
+        if (!Array.isArray(tags) || tags.length === 0) {
+            console.log('Validation failed: tags missing or empty', tags);
+            return res.status(400).json({
+                message: "At least one tag is required"
+            });
+        }
+        if (!tags.every(tag => typeof tag === 'string' && tag.trim().length > 0)) {
+            console.log('Validation failed: tags not all non-empty strings', tags);
+            return res.status(400).json({
+                message: "All tags must be non-empty strings"
+            });
+        }
 
-        // Create new question (tags will be added later by Python service)
+        // Process tags: find or create, and collect their IDs
+        const tagIds = [];
+        for (let tagName of tags) {
+            tagName = tagName.trim().toLowerCase();
+            if (!tagName) continue;
+            let tag = await Tag.findOne({ name: tagName });
+            if (!tag) {
+                // Create slug (replace spaces with dashes, remove non-alphanum except dash)
+                const slug = tagName.replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
+                tag = new Tag({ name: tagName, slug });
+                await tag.save();
+            }
+            tagIds.push(tag._id);
+        }
+
+        // Create new question with tagIds
         const newQuestion = new Question({
             authorId,
             title,
             body,
-            tagIds: [] // Empty array for now, will be populated by AI service
+            tagIds
         });
 
         await newQuestion.save();
@@ -36,12 +65,12 @@ export const createQuestion = async (req, res) => {
 
         // Populate author info
         await newQuestion.populate('authorId', 'username profile_photo accepted_answers_count');
+        await newQuestion.populate('tagIds', 'name slug');
 
         res.status(201).json({
             message: "Question created successfully",
             question: newQuestion,
-            success: true,
-            note: "Tags will be automatically generated and added to this question"
+            success: true
         });
     } catch (err) {
         console.log("Error in createQuestion", err);
@@ -76,7 +105,7 @@ export const getAllQuestions = async (req, res) => {
         const questions = await Question.find(query)
             .populate('authorId', 'username profile_photo accepted_answers_count')
             .populate('tagIds', 'name slug')
-            .sort({ $expr: { $subtract: ["$upvotes", "$downvotes"] } }, { createdAt: -1 }) // Sort by net votes first, then by date
+            .sort({ createdAt: -1 })
             .skip(skip)
             .limit(parseInt(limit));
 
@@ -184,6 +213,75 @@ export const deleteQuestion = async (req, res) => {
         });
     } catch (err) {
         console.log("Error in deleteQuestion", err);
+        res.status(500).json({ message: err.message });
+    }
+}; 
+
+// Get questions by user ID
+export const getUserQuestions = async (req, res) => {
+    try {
+        const { userId } = req.params;
+        const { page = 1, limit = 10 } = req.query;
+        const skip = (page - 1) * limit;
+
+        const questions = await Question.find({ authorId: userId })
+            .populate('authorId', 'username profile_photo accepted_answers_count')
+            .populate('tagIds', 'name slug')
+            .sort({ createdAt: -1 })
+            .skip(skip)
+            .limit(parseInt(limit));
+
+        const total = await Question.countDocuments({ authorId: userId });
+
+        res.status(200).json({
+            questions,
+            total,
+            currentPage: parseInt(page),
+            totalPages: Math.ceil(total / limit),
+            success: true
+        });
+    } catch (err) {
+        console.log("Error in getUserQuestions", err);
+        res.status(500).json({ message: err.message });
+    }
+};
+
+// Search questions
+export const searchQuestions = async (req, res) => {
+    try {
+        const { q: query } = req.query;
+        const { page = 1, limit = 10 } = req.query;
+        const skip = (page - 1) * limit;
+
+        if (!query) {
+            return res.status(400).json({ message: "Search query is required" });
+        }
+
+        const searchQuery = {
+            $or: [
+                { title: { $regex: query, $options: 'i' } },
+                { body: { $regex: query, $options: 'i' } }
+            ]
+        };
+
+        const questions = await Question.find(searchQuery)
+            .populate('authorId', 'username profile_photo accepted_answers_count')
+            .populate('tagIds', 'name slug')
+            .sort({ createdAt: -1 })
+            .skip(skip)
+            .limit(parseInt(limit));
+
+        const total = await Question.countDocuments(searchQuery);
+
+        res.status(200).json({
+            questions,
+            total,
+            currentPage: parseInt(page),
+            totalPages: Math.ceil(total / limit),
+            success: true
+        });
+    } catch (err) {
+        console.log("Error in searchQuestions", err);
         res.status(500).json({ message: err.message });
     }
 }; 

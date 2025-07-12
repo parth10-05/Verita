@@ -6,10 +6,23 @@ import {
     getAnswerById,
     updateAnswer,
     deleteAnswer,
-    acceptAnswer
+    acceptAnswer,
+    unacceptAnswer
 } from '../controller/answer.controller.js';
+import { voteAnswer, getAnswerVote } from '../controller/vote.controller.js';
 
 const router = express.Router();
+
+// Wrapper functions to map route parameters
+const voteAnswerById = async (req, res) => {
+    req.params.answerId = req.params.id;
+    return voteAnswer(req, res);
+};
+
+const getAnswerVoteById = async (req, res) => {
+    req.params.answerId = req.params.id;
+    return getAnswerVote(req, res);
+};
 
 // Public routes (no authentication required)
 router.get('/question/:questionId', getAnswersByQuestion);
@@ -23,5 +36,10 @@ router.post('/', createAnswer);
 router.put('/:id', updateAnswer);
 router.delete('/:id', deleteAnswer);
 router.post('/:id/accept', acceptAnswer);
+router.post('/:id/unaccept', unacceptAnswer);
+
+// Vote on an answer
+router.post('/:id/vote', voteAnswerById);
+router.get('/:id/vote', getAnswerVoteById);
 
 export default router; 

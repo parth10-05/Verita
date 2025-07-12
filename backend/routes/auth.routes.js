@@ -5,8 +5,10 @@ import {
     logoutUser, 
     sendOtp, 
     verifyOtp, 
-    resetPassword 
+    resetPassword,
+    getCurrentUser
 } from '../controller/auth.controller.js';
+import { auth } from '../middleware/auth.middleware.js';
 
 const router = express.Router();
 
@@ -14,6 +16,7 @@ const router = express.Router();
 router.post('/login', loginUser);
 router.post('/register', registerUser);
 router.post('/logout', logoutUser);
+router.get('/me', auth, getCurrentUser);
 
 // Forgot password routes
 router.post('/forgot-password/send-otp', sendOtp);
