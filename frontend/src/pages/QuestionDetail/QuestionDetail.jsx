@@ -7,7 +7,7 @@ const mockQuestion = {
   id: '1',
   title: 'How to implement authentication in React with JWT?',
   description: '<p>I\'m building a React application and need to implement user authentication using JWT tokens. What\'s the best approach?</p>',
-  author: { name: 'John Doe', avatar: null },
+  author: { name: 'John Doe', avatar: null, id: '1' },
   tags: ['React', 'JWT', 'Authentication'],
   createdAt: '2024-01-15T10:30:00Z',
 };
@@ -15,7 +15,7 @@ const mockQuestion = {
 const mockAnswers = [
   {
     id: 'a1',
-    author: { name: 'Jane Smith', avatar: null },
+    author: { name: 'Jane Smith', avatar: null, id: '2' },
     content: '<p>You can use <b>jsonwebtoken</b> on the backend and store the token in localStorage or cookies on the frontend.</p>',
     createdAt: '2024-01-16T12:00:00Z',
     votes: 5,
@@ -23,7 +23,7 @@ const mockAnswers = [
   },
   {
     id: 'a2',
-    author: { name: 'Mike Johnson', avatar: null },
+    author: { name: 'Mike Johnson', avatar: null, id: '3' },
     content: '<p>Consider using <i>httpOnly</i> cookies for better security.</p>',
     createdAt: '2024-01-16T13:30:00Z',
     votes: 3,
@@ -38,6 +38,22 @@ const QuestionDetail = () => {
   const [answerContent, setAnswerContent] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+
+  // Voting logic (mock)
+  const handleVote = (answerId, delta) => {
+    setAnswers(prev => prev.map(ans =>
+      ans.id === answerId ? { ...ans, votes: ans.votes + delta } : ans
+    ));
+  };
+
+  // Accept answer logic (only question owner)
+  const handleAccept = (answerId) => {
+    setAnswers(prev => prev.map(ans =>
+      ans.id === answerId
+        ? { ...ans, isAccepted: true }
+        : { ...ans, isAccepted: false }
+    ));
+  };
 
   const handleAnswerSubmit = (e) => {
     e.preventDefault();
@@ -64,6 +80,9 @@ const QuestionDetail = () => {
       setLoading(false);
     }, 800);
   };
+
+  // Assume user.id === mockQuestion.author.id means user is the question owner
+  const isOwner = user && user.id === mockQuestion.author.id;
 
   return (
     <div className="main-content">
@@ -112,6 +131,32 @@ const QuestionDetail = () => {
                     {ans.isAccepted && <span className="accepted-badge">✓ Accepted</span>}
                   </div>
                   <div className="answer-content" dangerouslySetInnerHTML={{ __html: ans.content }} />
+                  <div className="question-footer" style={{ display: 'flex', alignItems: 'center', gap: 16, marginTop: 12 }}>
+                    <div className="vote-buttons">
+                      <button
+                        className="vote-btn upvote"
+                        aria-label="Upvote"
+                        onClick={() => handleVote(ans.id, 1)}
+                        disabled={!user}
+                      >▲</button>
+                      <span className="vote-count">{ans.votes}</span>
+                      <button
+                        className="vote-btn downvote"
+                        aria-label="Downvote"
+                        onClick={() => handleVote(ans.id, -1)}
+                        disabled={!user}
+                      >▼</button>
+                    </div>
+                    {isOwner && !ans.isAccepted && (
+                      <button
+                        className="btn btn-outline btn-sm"
+                        style={{ marginLeft: 8 }}
+                        onClick={() => handleAccept(ans.id)}
+                      >
+                        Mark as Accepted
+                      </button>
+                    )}
+                  </div>
                 </div>
               ))}
             </div>

@@ -10,13 +10,33 @@ const AskQuestion = () => {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [tags, setTags] = useState([]);
+  const [tagInput, setTagInput] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
-  const handleTagChange = (e) => {
-    const value = Array.from(e.target.selectedOptions, option => option.value);
-    setTags(value);
+  // Add tag from input
+  const handleTagInput = (e) => {
+    setTagInput(e.target.value);
+    if (e.target.value.endsWith(',')) {
+      const newTag = e.target.value.replace(',', '').trim();
+      if (newTag && !tags.includes(newTag) && tags.length < 5) {
+        setTags([...tags, newTag]);
+      }
+      setTagInput('');
+    }
+  };
+
+  // Add tag from option click
+  const handleTagClick = (tag) => {
+    if (!tags.includes(tag) && tags.length < 5) {
+      setTags([...tags, tag]);
+    }
+  };
+
+  // Remove tag
+  const handleRemoveTag = (tag) => {
+    setTags(tags.filter(t => t !== tag));
   };
 
   const handleSubmit = (e) => {
@@ -40,10 +60,9 @@ const AskQuestion = () => {
         <div className="card ask-question-card">
           <div className="ask-question-header">
             <h2>Ask a Question</h2>
-            <p>Share your knowledge and get help from the community</p>
+            <p>Share your knowledge and get help from the community. Please provide as much detail as possible!</p>
           </div>
-          
-          <form onSubmit={handleSubmit} className="ask-question-form">
+          <form onSubmit={handleSubmit} className="ask-question-form" autoComplete="off">
             <div className="form-group">
               <label className="form-label" htmlFor="title">
                 Title <span className="required">*</span>
@@ -57,9 +76,11 @@ const AskQuestion = () => {
                 onChange={e => setTitle(e.target.value)}
                 placeholder="What's your question? Be specific."
                 required
+                maxLength={120}
+                aria-describedby="title-hint"
               />
-              <div className="form-hint">
-                Try to be as specific as possible. Good titles help others find your question.
+              <div className="form-hint" id="title-hint">
+                A good title summarizes your question in a single sentence (max 120 characters).
               </div>
             </div>
 
@@ -70,10 +91,10 @@ const AskQuestion = () => {
               <RichTextEditor
                 value={description}
                 onChange={setDescription}
-                placeholder="Provide all the information someone would need to answer your question. Include code examples, error messages, and any relevant context..."
+                placeholder="Describe your problem in detail. Include code, error messages, and what you have tried. Use the toolbar for formatting."
               />
               <div className="form-hint">
-                Use the toolbar to format your question. You can add <strong>bold text</strong>, <em>italics</em>, lists, links, and images to make your question clearer.
+                Use the toolbar to format your question: <strong>bold</strong>, <em>italics</em>, lists, links, images, emoji, and more.
               </div>
             </div>
 
@@ -81,32 +102,33 @@ const AskQuestion = () => {
               <label className="form-label" htmlFor="tags">
                 Tags <span className="required">*</span>
               </label>
-              <select
+              <input
+                className="form-input"
                 id="tags"
                 name="tags"
-                className="form-input"
-                multiple
-                value={tags}
-                onChange={handleTagChange}
-                required
-              >
-                {TAG_OPTIONS.map(tag => (
-                  <option key={tag} value={tag}>{tag}</option>
+                type="text"
+                value={tagInput}
+                onChange={handleTagInput}
+                placeholder="Type a tag and press comma, or select below (max 5)"
+                aria-describedby="tags-hint"
+                autoComplete="off"
+              />
+              <div className="tags-display" style={{ marginTop: '0.5rem', marginBottom: '0.5rem' }}>
+                {tags.map(tag => (
+                  <span key={tag} className="tag tag-selected" style={{ marginRight: 8 }}>
+                    {tag}
+                    <button type="button" aria-label={`Remove tag ${tag}`} onClick={() => handleRemoveTag(tag)} style={{ marginLeft: 4, background: 'none', border: 'none', color: 'var(--error-color)', cursor: 'pointer', fontWeight: 'bold' }}>×</button>
+                  </span>
                 ))}
-              </select>
-              <div className="form-hint">
-                Select 1-5 tags that best describe your question. Hold Ctrl (Windows) or Cmd (Mac) to select multiple.
               </div>
-              {tags.length > 0 && (
-                <div className="selected-tags">
-                  <span className="selected-tags-label">Selected tags:</span>
-                  <div className="tags-display">
-                    {tags.map(tag => (
-                      <span key={tag} className="tag tag-selected">{tag}</span>
-                    ))}
-                  </div>
-                </div>
-              )}
+              <div className="form-hint" id="tags-hint">
+                Select or type 1-5 tags that best describe your question. Popular tags:
+              </div>
+              <div className="tags-display" style={{ marginTop: 4, flexWrap: 'wrap' }}>
+                {TAG_OPTIONS.filter(tag => !tags.includes(tag)).map(tag => (
+                  <span key={tag} className="tag" style={{ cursor: 'pointer', marginRight: 8, marginBottom: 4 }} onClick={() => handleTagClick(tag)}>{tag}</span>
+                ))}
+              </div>
             </div>
 
             {error && (

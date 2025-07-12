@@ -1,8 +1,9 @@
 import React, { useState, useContext } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { FaSearch, FaBell, FaUser, FaSignOutAlt, FaBars, FaTimes } from 'react-icons/fa';
+import { FaSearch, FaBell, FaUser, FaSignOutAlt, FaBars, FaTimes, FaSun, FaMoon } from 'react-icons/fa';
 import { AuthContext } from '../../context/AuthContext';
 import { NotificationContext } from '../../context/NotificationContext';
+import { useTheme } from '../../context/ThemeContext';
 import NotificationDropdown from '../NotificationDropdown/NotificationDropdown';
 //import './styles/layout.css';
 
@@ -12,6 +13,7 @@ const Header = () => {
   const [showNotifications, setShowNotifications] = useState(false);
   const { user, logout } = useContext(AuthContext);
   const { unreadCount } = useContext(NotificationContext);
+  const { isDarkMode, toggleTheme } = useTheme();
   const navigate = useNavigate();
 
   const handleSearch = (e) => {
@@ -52,13 +54,21 @@ const Header = () => {
         <nav className={`header-nav ${isMenuOpen ? 'nav-open' : ''}`}>
           <Link to="/" className="nav-link">Home</Link>
           <Link to="/ask" className="nav-link">Ask Question</Link>
-          {user && (
-            <Link to="/profile" className="nav-link">Profile</Link>
-          )}
+          {user && <Link to="/profile" className="nav-link">Profile</Link>}
+          {user && <Link to="/notifications" className="nav-link">Notifications</Link>}
         </nav>
 
         {/* User Menu */}
         <div className="header-user">
+          {/* Dark Mode Toggle */}
+          <button
+            className="theme-toggle-btn"
+            onClick={toggleTheme}
+            aria-label={isDarkMode ? 'Switch to light mode' : 'Switch to dark mode'}
+          >
+            {isDarkMode ? <FaSun /> : <FaMoon />}
+          </button>
+
           {user ? (
             <>
               {/* Notification Bell */}
@@ -66,6 +76,7 @@ const Header = () => {
                 <button
                   className="notification-btn"
                   onClick={() => setShowNotifications(!showNotifications)}
+                  aria-label="Show notifications"
                 >
                   <FaBell className="notification-icon" />
                   {unreadCount > 0 && (
