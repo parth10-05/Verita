@@ -20,6 +20,10 @@ const notificationSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     required: [true, 'Reference ID is required']
   },
+  senderId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User'
+  },
   isRead: {
     type: Boolean,
     default: false

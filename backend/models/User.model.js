@@ -45,6 +45,10 @@ const userSchema = new mongoose.Schema({
   resetPasswordExpiresOtp: {
     type: Date,
     default: null
+  },
+  accepted_answers_count: {
+    type: Number,
+    default: 0
   }
 }, { timestamps: true });
 

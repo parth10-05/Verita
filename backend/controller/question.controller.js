@@ -1,6 +1,7 @@
 import Question from '../models/Question.model.js';
 import User from '../models/User.model.js';
 import Tag from '../models/Tag.model.js';
+import { createMentionNotifications } from './notification.controller.js';
 
 // Create a new question
 export const createQuestion = async (req, res) => {
@@ -25,8 +26,16 @@ export const createQuestion = async (req, res) => {
 
         await newQuestion.save();
 
+        // Check for mentions in question content
+        await createMentionNotifications(
+            body,
+            'question',
+            newQuestion._id,
+            authorId
+        );
+
         // Populate author info
-        await newQuestion.populate('authorId', 'username profile_photo');
+        await newQuestion.populate('authorId', 'username profile_photo accepted_answers_count');
 
         res.status(201).json({
             message: "Question created successfully",
@@ -65,9 +74,9 @@ export const getAllQuestions = async (req, res) => {
         }
 
         const questions = await Question.find(query)
-            .populate('authorId', 'username profile_photo')
+            .populate('authorId', 'username profile_photo accepted_answers_count')
             .populate('tagIds', 'name slug')
-            .sort({ createdAt: -1 })
+            .sort({ $expr: { $subtract: ["$upvotes", "$downvotes"] } }, { createdAt: -1 }) // Sort by net votes first, then by date
             .skip(skip)
             .limit(parseInt(limit));
 
@@ -92,7 +101,7 @@ export const getQuestionById = async (req, res) => {
         const { id } = req.params;
 
         const question = await Question.findById(id)
-            .populate('authorId', 'username profile_photo')
+            .populate('authorId', 'username profile_photo accepted_answers_count')
             .populate('tagIds', 'name slug');
 
         if (!question) {
@@ -136,7 +145,7 @@ export const updateQuestion = async (req, res) => {
         await question.save();
 
         // Populate author info
-        await question.populate('authorId', 'username profile_photo');
+        await question.populate('authorId', 'username profile_photo accepted_answers_count');
         await question.populate('tagIds', 'name slug');
 
         res.status(200).json({

@@ -1,6 +1,7 @@
 import Answer from '../models/Answer.model.js';
 import Question from '../models/Question.model.js';
 import User from '../models/User.model.js';
+import { createNotification, createMentionNotifications } from './notification.controller.js';
 
 // Create a new answer
 export const createAnswer = async (req, res) => {
@@ -30,8 +31,25 @@ export const createAnswer = async (req, res) => {
 
         await newAnswer.save();
 
+        // Create notification for question author
+        await createNotification(
+            question.authorId,
+            'new_answer',
+            'question',
+            question_id,
+            user_id
+        );
+
+        // Check for mentions in answer content
+        await createMentionNotifications(
+            content,
+            'answer',
+            newAnswer._id,
+            user_id
+        );
+
         // Populate user info
-        await newAnswer.populate('user_id', 'username profile_photo');
+        await newAnswer.populate('user_id', 'username profile_photo accepted_answers_count');
 
         res.status(201).json({
             message: "Answer created successfully",
@@ -58,8 +76,8 @@ export const getAnswersByQuestion = async (req, res) => {
         }
 
         const answers = await Answer.find({ question_id: questionId })
-            .populate('user_id', 'username profile_photo')
-            .sort({ is_accepted: -1, created_at: -1 }) // Accepted answers first, then by date
+            .populate('user_id', 'username profile_photo accepted_answers_count')
+            .sort({ is_accepted: -1, $expr: { $subtract: ["$upvotes", "$downvotes"] } }, { created_at: -1 }) // Accepted first, then by net votes, then by date
             .skip(skip)
             .limit(parseInt(limit));
 
@@ -84,7 +102,7 @@ export const getAnswerById = async (req, res) => {
         const { id } = req.params;
 
         const answer = await Answer.findById(id)
-            .populate('user_id', 'username profile_photo')
+            .populate('user_id', 'username profile_photo accepted_answers_count')
             .populate('question_id', 'title');
 
         if (!answer) {
@@ -128,7 +146,7 @@ export const updateAnswer = async (req, res) => {
         await answer.save();
 
         // Populate user info
-        await answer.populate('user_id', 'username profile_photo');
+        await answer.populate('user_id', 'username profile_photo accepted_answers_count');
 
         res.status(200).json({
             message: "Answer updated successfully",

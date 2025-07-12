@@ -4,7 +4,6 @@ import { createAdmin } from '../controller/admin.controller.js';
 
 const router = express.Router();
 
-// Test route (no auth required)
 router.get('/', (req, res) => {
     res.json({message:"Admin routes are working"});
 });
