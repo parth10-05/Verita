@@ -17,12 +17,38 @@ const Admin = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const { user } = useAuth();
 
-  // Check if user is admin
+  // Check if user is admin - no redirect, just show access denied
   useEffect(() => {
-    if (user && user.role !== 'admin') {
-      window.location.href = '/';
+    if (user && user.role === 'admin') {
+      loadStats();
+      setLoading(false);
+    } else if (user && user.role !== 'admin') {
+      setLoading(false);
     }
   }, [user]);
+
+  // Debug section - remove this after fixing the issue
+  const DebugInfo = () => {
+    if (!user) return null;
+    
+    return (
+      <div style={{ 
+        background: '#f0f0f0', 
+        padding: '10px', 
+        margin: '10px 0', 
+        border: '1px solid #ccc',
+        borderRadius: '5px',
+        fontSize: '12px'
+      }}>
+        <h4>Debug Info:</h4>
+        <p><strong>User ID:</strong> {user._id || user.id}</p>
+        <p><strong>Username:</strong> {user.username}</p>
+        <p><strong>Email:</strong> {user.email}</p>
+        <p><strong>Role:</strong> {user.role || 'undefined'}</p>
+        <p><strong>Full user object:</strong> {JSON.stringify(user, null, 2)}</p>
+      </div>
+    );
+  };
 
   // Load dashboard stats
   const loadStats = async () => {
@@ -140,18 +166,26 @@ const Admin = () => {
     }
   };
 
-  // Load initial data
-  useEffect(() => {
-    if (user?.role === 'admin') {
-      loadStats();
-      setLoading(false);
-    }
-  }, [user]);
-
-  if (!user || user.role !== 'admin') {
+  if (!user) {
     return (
       <div className="admin-container">
-        <div className="error-message">Access denied. Admin privileges required.</div>
+        <div className="error-message">Please log in to access this page.</div>
+      </div>
+    );
+  }
+
+  // Debug: Log user data to console
+  console.log('User data:', user);
+  console.log('User role:', user.role);
+
+  if (user.role !== 'admin') {
+    return (
+      <div className="admin-container">
+        <div className="error-message">
+          Access denied. Admin privileges required. 
+          <br />
+          Current role: {user.role || 'undefined'}
+        </div>
       </div>
     );
   }
@@ -166,6 +200,7 @@ const Admin = () => {
 
   return (
     <motion.div className="admin-container" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.5 }}>
+      <DebugInfo />
       <div className="admin-header">
         <h1>Admin Dashboard</h1>
         <p>Manage users, questions, and monitor platform activity</p>

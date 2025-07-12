@@ -54,8 +54,8 @@ export const getUserStats = async (req, res) => {
     
     const [questionCount, answerCount, acceptedAnswerCount] = await Promise.all([
       Question.countDocuments({ authorId: userId }),
-      Answer.countDocuments({ authorId: userId }),
-      Answer.countDocuments({ authorId: userId, isAccepted: true })
+      Answer.countDocuments({ user_id: userId }),
+      Answer.countDocuments({ user_id: userId, is_accepted: true })
     ]);
 
     const stats = {
@@ -96,19 +96,30 @@ export const getUserQuestions = async (req, res) => {
     }
 
     const questions = await Question.find({ authorId: userId })
-      .populate('authorId', 'name avatar')
+      .populate('authorId', 'username email')
       .sort(sortOption)
       .skip(skip)
       .limit(parseInt(limit));
 
+    // Add answer count to each question
+    const questionsWithAnswerCount = await Promise.all(
+      questions.map(async (question) => {
+        const answerCount = await Answer.countDocuments({ question_id: question._id });
+        return {
+          ...question.toObject(),
+          answerCount
+        };
+      })
+    );
+
     const total = await Question.countDocuments({ authorId: userId });
 
     res.json({ 
-      questions, 
+      questions: questionsWithAnswerCount, 
       pagination: {
         current: parseInt(page),
         total: Math.ceil(total / limit),
-        hasMore: skip + questions.length < total
+        hasMore: skip + questionsWithAnswerCount.length < total
       }
     });
   } catch (error) {
@@ -134,20 +145,20 @@ export const getUserAnswers = async (req, res) => {
         sortOption = { upvotes: -1 };
         break;
       case 'accepted':
-        sortOption = { isAccepted: -1, createdAt: -1 };
+        sortOption = { is_accepted: -1, createdAt: -1 };
         break;
       default:
         sortOption = { createdAt: -1 };
     }
 
-    const answers = await Answer.find({ authorId: userId })
-      .populate('authorId', 'name avatar')
-      .populate('questionId', 'title')
+    const answers = await Answer.find({ user_id: userId })
+      .populate('user_id', 'username email')
+      .populate('question_id', 'title')
       .sort(sortOption)
       .skip(skip)
       .limit(parseInt(limit));
 
-    const total = await Answer.countDocuments({ authorId: userId });
+    const total = await Answer.countDocuments({ user_id: userId });
 
     res.json({ 
       answers, 

@@ -33,6 +33,7 @@ export const loginUser = async (req,res) => {
             res.status(200).json({
                 message: "User logged in successfully",
                 user: {
+                    _id: user._id,
                     id: user._id,
                     username: user.username,
                     email: user.email,
@@ -187,6 +188,7 @@ export const getCurrentUser = async (req, res) => {
         
         res.status(200).json({
             user: {
+                _id: user._id,
                 id: user._id,
                 username: user.username,
                 email: user.email,
